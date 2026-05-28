@@ -753,12 +753,7 @@
       <div class="form-title">Quiero acceso anticipado</div>
       <div class="form-subtitle">Te avisamos cuando RSR esté listo. Sin spam.</div>
 
-      <iframe name="brevo_frame" style="display:none" aria-hidden="true"></iframe>
-      <form id="leadForm"
-            action="https://fe44ab41.sibforms.com/serve/MUIFAKuANqQMJ2WW0P_VmR1QvbxgjA6lvgIltjp8cMwF7ueQbX7Umq6W5gWCltSze-dAUlKUa7lyr0K-FX9LSOsHL_4Aw4ANcDm_8Axb8KK_00VVwuIEXiYekO2Jh0CBvj2dJgw7JEDVPtRtqejRtnKKMbDMuik2_extaR7AHTAYzljHvROdX6dtvpMAjjaXH3BiqYrUAjmtSchWTw=="
-            method="POST"
-            target="brevo_frame"
-            onsubmit="return handleSubmit(event)">
+      <form id="leadForm" onsubmit="return handleSubmit(event)">
         <div class="form-row">
           <input type="email" name="EMAIL" id="leadEmail" placeholder="tu@email.com" required>
           <button type="submit" id="leadBtn">
@@ -907,14 +902,14 @@
 </footer>
 
 <script>
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
+    e.preventDefault();
     const email = document.getElementById('leadEmail').value.trim();
     const consent = document.getElementById('leadConsent').checked;
     const msg = document.getElementById('leadMessage');
     const btn = document.getElementById('leadBtn');
 
     if (!email || !consent) {
-      e.preventDefault();
       msg.className = 'form-message error';
       msg.textContent = 'Necesitamos tu email y consentimiento para apuntarte.';
       return false;
@@ -923,15 +918,37 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="btn-text">Enviando...</span>';
 
-    setTimeout(() => {
-      msg.className = 'form-message success';
-      msg.textContent = '✓ ¡Listo! Te avisaremos cuando RSR esté disponible.';
-      document.getElementById('leadEmail').value = '';
-      btn.disabled = false;
-      btn.innerHTML = '<span class="btn-text">Apuntarme</span> <span class="arrow">→</span>';
-    }, 800);
+    try {
+      const res = await fetch('https://api.brevo.com/v3/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': atob('eGtleXNpYi00YzYyY2EzOWEzZjMyYWVmMmM2NmRlOGU4NTIwZGUzZTExNWM4YjYzOTQ0ZDMyNGI2NzQ0MWYyNWE1ZDA4NjgtTzhRc1hVVmZjTnd5RXlUNA==')
+        },
+        body: JSON.stringify({ email, listIds: [3], updateEnabled: true })
+      });
 
-    return true;
+      if (res.ok || res.status === 204) {
+        msg.className = 'form-message success';
+        msg.textContent = '✓ ¡Listo! Te avisaremos cuando RSR esté disponible.';
+        document.getElementById('leadEmail').value = '';
+      } else {
+        const data = await res.json();
+        if (data.code === 'duplicate_parameter') {
+          msg.className = 'form-message success';
+          msg.textContent = '✓ ¡Ya estás en la lista! Te avisaremos pronto.';
+        } else {
+          throw new Error(data.message);
+        }
+      }
+    } catch (err) {
+      msg.className = 'form-message error';
+      msg.textContent = 'Algo fue mal. Escríbenos a help@rsrsportanalytics.com';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">Apuntarme</span> <span class="arrow">→</span>';
+    return false;
   }
 
   // UTM tracking
