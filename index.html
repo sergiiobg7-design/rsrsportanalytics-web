@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSR Sport Analytics · Picks con IA</title>
+<meta name="description" content="Análisis estadístico avanzado para apuestas deportivas. Modelo Poisson, tracking de rendimiento, datos en tiempo real. Suscríbete ahora.">
+
+<!-- Open Graph para redes sociales (Facebook, LinkedIn, WhatsApp) -->
+<meta property="og:title" content="RSR Sport Analytics · Picks con IA">
+<meta property="og:description" content="Picks deportivos generados por IA. Sin corazonadas. Solo estadísticas.">
+<meta property="og:type" content="website">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RSR Sport Analytics · Picks con IA">
+<meta name="twitter:description" content="Picks deportivos generados por IA. Sin corazonadas. Solo estadísticas.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d1a;
+    --bg-card: #131729;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --text: #f0f2f8;
+    --text-dim: #8c93a3;
+    --text-faint: #5a6273;
+    --accent: #c4ff5a;
+    --accent-soft: #7aff8a;
+    --accent-dark: #8ba353;
+    --accent-glow: rgba(196,255,90,0.25);
+    --violet: #a594ff;
+    --warm: #ffaa3d;
+    --danger: #ff5e7a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(196,255,90,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(165,148,255,0.06) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  /* NAVBAR */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,13,26,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .logo-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 18px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .nav-cta {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 9px 18px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-cta:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* CONTENT */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 32px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    margin-bottom: 80px;
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: rgba(196,255,90,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 400;
+    margin-bottom: 24px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .hero p.subtitle {
+    font-size: 18px;
+    color: var(--text-dim);
+    max-width: 600px;
+    margin: 0 auto 40px;
+  }
+
+  /* FORM CAPTURA */
+  .signup-form {
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .form-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px;
+    margin-bottom: 6px;
+  }
+  .form-subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 22px;
+  }
+  .form-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .form-row input[type="email"] {
+    flex: 1;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 13px 16px;
+    font-family: inherit;
+    font-size: 15px;
+    border-radius: 8px;
+    transition: all 0.15s;
+  }
+  .form-row input[type="email"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .form-row button {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 13px 22px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .form-row button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px var(--accent-glow);
+  }
+  .form-row button:disabled {
+    background: var(--border-strong);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    color: var(--text-faint);
+  }
+  .consent {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .consent input[type="checkbox"] {
+    margin-top: 2px;
+    accent-color: var(--accent);
+  }
+  .consent a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .consent a:hover { text-decoration: underline; }
+
+  .form-message {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    display: none;
+  }
+  .form-message.success {
+    display: block;
+    background: rgba(196,255,90,0.12);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+  .form-message.error {
+    display: block;
+    background: rgba(255,94,122,0.12);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+  }
+
+  .counter-badge {
+    margin-top: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .counter-badge strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .counter-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  /* FEATURES */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 80px;
+  }
+  .feature {
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border: 1px solid var(--border);
+    padding: 28px 24px;
+    border-radius: 14px;
+    transition: all 0.2s;
+  }
+  .feature:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-4px);
+  }
+  .feature-icon {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  .feature h3 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .feature p {
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  /* SECTION HEADER */
+  .section-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .section-header h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(32px, 4vw, 44px);
+    line-height: 1.1;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .section-header h2 em { color: var(--accent); font-style: italic; }
+  .section-header p {
+    color: var(--text-dim);
+    font-size: 15px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* PROBLEM/SOLUTION */
+  .problem-solution {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 80px;
+  }
+  .ps-card {
+    padding: 28px;
+    border-radius: 14px;
+  }
+  .ps-card.problem {
+    background: rgba(255,94,122,0.04);
+    border: 1px solid rgba(255,94,122,0.2);
+  }
+  .ps-card.solution {
+    background: rgba(196,255,90,0.04);
+    border: 1px solid rgba(196,255,90,0.2);
+  }
+  .ps-label {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    border-radius: 4px;
+    margin-bottom: 14px;
+  }
+  .ps-card.problem .ps-label {
+    background: rgba(255,94,122,0.15);
+    color: var(--danger);
+  }
+  .ps-card.solution .ps-label {
+    background: rgba(196,255,90,0.15);
+    color: var(--accent);
+  }
+  .ps-card h3 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px;
+    margin-bottom: 14px;
+  }
+  .ps-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .ps-card li {
+    padding: 8px 0;
+    color: var(--text-dim);
+    font-size: 14px;
+    padding-left: 22px;
+    position: relative;
+  }
+  .ps-card.problem li::before {
+    content: '×';
+    position: absolute;
+    left: 0;
+    color: var(--danger);
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .ps-card.solution li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* DISCLAIMER */
+  .disclaimer-section {
+    background: rgba(255,170,61,0.05);
+    border-left: 3px solid var(--warm);
+    padding: 22px 26px;
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 60px;
+  }
+  .disclaimer-section h4 {
+    color: var(--warm);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .disclaimer-section p {
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .disclaimer-section a { color: var(--warm); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 30px 32px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 12px;
+  }
+  footer a {
+    color: var(--text-dim);
+    text-decoration: none;
+    margin: 0 12px;
+  }
+  footer a:hover { color: var(--accent); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 14px 20px; }
+    main { padding: 40px 20px 60px; }
+    .features { grid-template-columns: 1fr; gap: 16px; }
+    .problem-solution { grid-template-columns: 1fr; gap: 16px; }
+    .form-row { flex-direction: column; }
+    .form-row button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    RSR
+  </div>
+  <a href="#signup" class="nav-cta">Suscribirme</a>
+</nav>
+
+<main>
+
+  <section class="hero">
+    <div class="hero-badge">🤖 RSR Sport Analytics</div>
+    <h1>
+      Apuestas con <em>datos reales</em>,<br>
+      no con corazonadas.
+    </h1>
+    <p class="subtitle">
+      RSR analiza miles de partidos con modelos estadísticos avanzados para detectar las apuestas con valor real. Sin trucos. Sin pronósticos místicos.
+    </p>
+
+    <div class="signup-form" id="signup">
+      <div class="form-title">Empieza ahora</div>
+      <div class="form-subtitle">Recibe picks generados por IA. Planes desde €20/semana.</div>
+
+      <!--
+        FORMULARIO CONECTADO A FORMSPREE
+        Para activarlo: registrarse en formspree.io y reemplazar
+        "TU_FORM_ID" por el ID real que te dan al crear el form.
+      -->
+      <iframe name="brevo_frame" style="display:none"></iframe>
+      <form id="leadForm" action="https://fe44ab41.sibforms.com/serve/MUIFAKuANqQMJ2WW0P_VmR1QvbxgjA6lvgIltjp8cMwF7ueQbX7Umq6W5gWCltSze-dAUlKUa7lyr0K-FX9LSOsHL_4Aw4ANcDm_8Axb8KK_00VVwuIEXiYekO2Jh0CBvj2dJgw7JEDVPtRtqejRtnKKMbDMuik2_extaR7AHTAYzljHvROdX6dtvpMAjjaXH3BiqYrUAjmtSchWTw==" method="POST" target="brevo_frame" onsubmit="return handleSubmit(event)">
+        <div class="form-row">
+          <input type="email" name="EMAIL" id="leadEmail" placeholder="tu@email.com" required>
+          <button type="submit" id="leadBtn">Quiero acceso →</button>
+        </div>
+        <div class="consent">
+          <input type="checkbox" name="consent" id="leadConsent" required checked>
+          <label for="leadConsent">
+            Acepto recibir comunicaciones de RSR y la <a href="#privacy">política de privacidad</a>
+          </label>
+        </div>
+        <div class="form-message" id="leadMessage"></div>
+      </form>
+    </div>
+
+    <div class="counter-badge">
+      <span class="counter-dot"></span>
+      Ya somos <strong class="num">120+</strong> en la lista
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature">
+      <div class="feature-icon">📊</div>
+      <h3>Modelo Poisson + Dixon-Coles</h3>
+      <p>Predicciones calibradas con miles de partidos históricos. La misma matemática que usan las casas profesionales.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <h3>Datos en tiempo real</h3>
+      <p>Cuotas actualizadas de 5+ casas de apuestas comparadas. Detectamos automáticamente la mejor cuota disponible.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🎯</div>
+      <h3>Tracking de rendimiento</h3>
+      <p>Registra tus picks y mide ROI real, win rate, CLV y rachas. Saber si ganas a largo plazo es la diferencia.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-header">
+      <h2>El problema con las apuestas <em>"normales"</em></h2>
+      <p>El 95% de los apostadores pierde a largo plazo. No es mala suerte: es información.</p>
+    </div>
+
+    <div class="problem-solution">
+      <div class="ps-card problem">
+        <span class="ps-label">El problema</span>
+        <h3>Apostar sin método</h3>
+        <ul>
+          <li>Tipsters anónimos sin track record verificable</li>
+          <li>Decisiones por "intuición" o por el equipo favorito</li>
+          <li>Sin medir el rendimiento real (ROI, CLV, win rate)</li>
+          <li>Stakes desproporcionados sin gestión de bankroll</li>
+          <li>Comparar 1 sola casa cuando hay decenas</li>
+        </ul>
+      </div>
+      <div class="ps-card solution">
+        <span class="ps-label">Lo que hace RSR</span>
+        <h3>Apostar con datos</h3>
+        <ul>
+          <li>Modelo estadístico transparente y verificable</li>
+          <li>Cálculo automático de "edge" (valor esperado)</li>
+          <li>Tracking integrado: sabes si ganas o pierdes</li>
+          <li>Stake óptimo calculado con Kelly fraccionado</li>
+          <li>Comparación multi-casa para mejores cuotas</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="disclaimer-section">
+    <h4>⚠ Aviso importante</h4>
+    <p>
+      <strong>Apostar conlleva riesgo de pérdida económica.</strong> RSR es una herramienta de análisis estadístico, no garantiza beneficios. Incluso con buenos modelos, las apuestas son negativas a largo plazo para la mayoría. Si tienes problemas con el juego: FEJAR <strong>900 200 225</strong> · <a href="https://www.jugarbien.es" target="_blank">jugarbien.es</a>
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  <div>
+    <a href="#privacy">Privacidad</a>
+    <a href="#terms">Términos</a>
+    <a href="mailto:help@rsrsportanalytics.com">Contacto</a>
+  </div>
+  <div style="margin-top:14px;">RSR Sport Analytics · 2026 · España</div>
+</footer>
+
+<script>
+  function handleSubmit(e) {
+    const email = document.getElementById('leadEmail').value.trim();
+    const consent = document.getElementById('leadConsent').checked;
+    const msg = document.getElementById('leadMessage');
+    const btn = document.getElementById('leadBtn');
+
+    if (!email || !consent) {
+      e.preventDefault();
+      msg.className = 'form-message error';
+      msg.textContent = 'Necesitamos tu email y consentimiento para continuar.';
+      return false;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    setTimeout(() => {
+      msg.className = 'form-message success';
+      msg.textContent = '✓ ¡Listo! Pronto recibirás noticias de RSR.';
+      document.getElementById('leadEmail').value = '';
+      btn.disabled = false;
+      btn.textContent = 'Quiero acceso →';
+    }, 800);
+
+    return true;
+  }
+
+  // UTM tracking
+  const params = new URLSearchParams(window.location.search);
+  const source = params.get('utm_source') || params.get('source') || params.get('ref');
+  if (source) {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = 'source';
+    inp.value = source;
+    document.getElementById('leadForm').appendChild(inp);
+  }
+</script>
+
+</body>
+</html>
