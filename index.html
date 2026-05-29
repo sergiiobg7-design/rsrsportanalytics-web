@@ -943,7 +943,7 @@
       }
     } catch (err) {
       msg.className = 'form-message error';
-      msg.textContent = 'Algo fue mal. Escríbenos a help@rsrsportanalytics.com';
+      msg.textContent = 'Error: ' + (err.message || 'desconocido');
     }
 
     btn.disabled = false;
