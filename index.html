@@ -753,7 +753,7 @@
       <div class="form-title">Quiero acceso anticipado</div>
       <div class="form-subtitle">Te avisamos cuando RSR esté listo. Sin spam.</div>
 
-      <form id="leadForm" onsubmit="return handleSubmit(event)">
+      <form id="leadForm">
         <div class="form-row">
           <input type="email" name="EMAIL" id="leadEmail" placeholder="tu@email.com" required>
           <button type="submit" id="leadBtn">
@@ -902,8 +902,10 @@
 </footer>
 
 <script>
-  async function handleSubmit(e) {
+  document.getElementById('leadForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    e.stopPropagation();
+
     const email = document.getElementById('leadEmail').value.trim();
     const consent = document.getElementById('leadConsent').checked;
     const msg = document.getElementById('leadMessage');
@@ -912,44 +914,54 @@
     if (!email || !consent) {
       msg.className = 'form-message error';
       msg.textContent = 'Necesitamos tu email y consentimiento para apuntarte.';
-      return false;
+      return;
     }
 
     btn.disabled = true;
     btn.innerHTML = '<span class="btn-text">Enviando...</span>';
+    msg.className = '';
+    msg.style.display = 'none';
 
-    try {
-      const res = await fetch('https://api.brevo.com/v3/contacts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': (()=>{const a='xkeysib-';const b=['4c62ca39','a3f32aef','2c66de8e','8520de3e','115c8b63','944d324b','67441f25','a5d0a868'];const c='-O8QsXUVfcNwyEyT4';return a+b.join('')+c;})()
-        },
-        body: JSON.stringify({ email, listIds: [3], updateEnabled: true })
-      });
+    const apiKey = (()=>{
+      const a='xkeysib-';
+      const b=['4c62ca39','a3f32aef','2c66de8e','8520de3e','115c8b63','944d324b','67441f25','a5d0a868'];
+      const c='-O8QsXUVfcNwyEyT4';
+      return a+b.join('')+c;
+    })();
 
-      if (res.ok || res.status === 204) {
+    fetch('https://api.brevo.com/v3/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+      body: JSON.stringify({ email: email, listIds: [3], updateEnabled: true })
+    })
+    .then(function(res) {
+      if (res.status === 201 || res.status === 204) {
+        msg.style.display = 'block';
         msg.className = 'form-message success';
         msg.textContent = '✓ ¡Listo! Te avisaremos cuando RSR esté disponible.';
         document.getElementById('leadEmail').value = '';
       } else {
-        const data = await res.json();
-        if (data.code === 'duplicate_parameter') {
-          msg.className = 'form-message success';
-          msg.textContent = '✓ ¡Ya estás en la lista! Te avisaremos pronto.';
-        } else {
-          throw new Error(data.message);
-        }
+        return res.json().then(function(data) {
+          if (data.code === 'duplicate_parameter') {
+            msg.style.display = 'block';
+            msg.className = 'form-message success';
+            msg.textContent = '✓ ¡Ya estás en la lista! Te avisaremos pronto.';
+          } else {
+            throw new Error(data.message || 'Error ' + res.status);
+          }
+        });
       }
-    } catch (err) {
+    })
+    .catch(function(err) {
+      msg.style.display = 'block';
       msg.className = 'form-message error';
-      msg.textContent = 'Error: ' + (err.message || 'desconocido');
-    }
-
-    btn.disabled = false;
-    btn.innerHTML = '<span class="btn-text">Apuntarme</span> <span class="arrow">→</span>';
-    return false;
-  }
+      msg.textContent = 'Error: ' + (err.message || 'inténtalo de nuevo');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="btn-text">Apuntarme</span> <span class="arrow">→</span>';
+    });
+  });
 
   // UTM tracking
   const params = new URLSearchParams(window.location.search);
